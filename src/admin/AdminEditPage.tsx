@@ -32,6 +32,11 @@ const EMPTY: Product = {
 const PRICE_GROUPS = ["1만원 이하", "3만원 이하", "5만원 이하", "10만원 이하", "20만원 이상"];
 const RECEIVER_OPTIONS = ["연인", "친구", "부모님", "직장동료", "형제자매", "아이"];
 const TASTE_OPTIONS = ["커피", "향", "인테리어", "운동", "캠핑", "독서", "술", "귀여운 것", "실용적인 것"];
+const OCCASION_OPTIONS = ["생일", "집들이", "결혼", "졸업", "취직", "명절", "기념일"];
+const COLLECTION_OPTIONS = [
+  "친구생일", "집들이", "직장동료", "부모님", "남사친", "여자친구",
+  "결혼친구", "입학졸업", "남자친구", "아기", "커피", "요리", "향", "술", "귀여움", "인테리어",
+];
 
 function field(label: string, children: ReactNode) {
   return (
@@ -274,6 +279,22 @@ export default function AdminEditPage() {
             options={TASTE_OPTIONS}
             selected={product.tags}
             onChange={(v) => update("tags", v)}
+          />
+        )}
+        {field(
+          "행사/상황 (occasion)",
+          <ChipToggle
+            options={OCCASION_OPTIONS}
+            selected={product.occasion}
+            onChange={(v) => update("occasion", v)}
+          />
+        )}
+        {field(
+          "컬렉션 (collections)",
+          <ChipToggle
+            options={COLLECTION_OPTIONS}
+            selected={product.collections}
+            onChange={(v) => update("collections", v)}
           />
         )}
         {field(

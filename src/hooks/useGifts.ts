@@ -3,29 +3,44 @@ import { supabase } from "../lib/supabaseClient";
 import { rowToProduct, type GiftRow } from "../lib/giftMapper";
 import type { Product } from "../utils/filter";
 
+// 모듈 레벨 캐시 — 앱 생명주기 동안 한 번만 페치
+let cache: Product[] | null = null;
+let fetchPromise: Promise<void> | null = null;
+
 export function useGifts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(cache ?? []);
+  const [loading, setLoading] = useState(cache === null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    if (cache !== null) return;
 
-    async function load() {
-      setLoading(true);
-      const { data, error } = await supabase.from("gifts").select("*");
-      if (cancelled) return;
-      if (error) {
-        setError(error.message);
-        setProducts([]);
-      } else {
-        setProducts(((data ?? []) as GiftRow[]).map(rowToProduct));
-        setError(null);
-      }
-      setLoading(false);
+    if (!fetchPromise) {
+      fetchPromise = (async () => {
+        const { data, error } = await supabase.from("gifts").select("*");
+        if (error) {
+          fetchPromise = null;
+          throw error;
+        }
+        cache = ((data ?? []) as GiftRow[]).map(rowToProduct);
+      })();
     }
 
-    load();
+    let cancelled = false;
+    fetchPromise
+      .then(() => {
+        if (!cancelled) {
+          setProducts(cache!);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message);
+          setLoading(false);
+        }
+      });
+
     return () => {
       cancelled = true;
     };
