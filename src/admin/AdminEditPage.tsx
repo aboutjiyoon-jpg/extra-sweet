@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useState, useRef, type ReactNode, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { rowToProduct, productToGiftPayload, type GiftRow } from "../lib/giftMapper";
@@ -103,6 +103,16 @@ export default function AdminEditPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  const copyToClipboard = async (value: string, key: string) => {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  };
 
   useEffect(() => {
     if (isNew) return;
@@ -360,11 +370,47 @@ export default function AdminEditPage() {
                 </div>
               ))}
             </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => cameraInputRef.current?.click()}
+                style={{
+                  flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb",
+                  background: "#f8f9fa", fontSize: 14, cursor: "pointer",
+                }}
+              >
+                📷 카메라
+              </button>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => galleryInputRef.current?.click()}
+                style={{
+                  flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb",
+                  background: "#f8f9fa", fontSize: 14, cursor: "pointer",
+                }}
+              >
+                🖼️ 앨범
+              </button>
+            </div>
             <input
+              ref={cameraInputRef}
               type="file"
               accept="image/*"
               capture="environment"
-              disabled={uploading}
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleImageUpload(file);
@@ -377,38 +423,39 @@ export default function AdminEditPage() {
           </div>
         )}
 
-        {field(
-          "쿠팡 링크",
-          <input
-            style={inputStyle}
-            value={product.links.coupang}
-            onChange={(e) => updateLink("coupang", e.target.value)}
-          />
-        )}
-        {field(
-          "29CM 링크",
-          <input
-            style={inputStyle}
-            value={product.links["29cm"]}
-            onChange={(e) => updateLink("29cm", e.target.value)}
-          />
-        )}
-        {field(
-          "카카오 선물하기 링크",
-          <input
-            style={inputStyle}
-            value={product.links.kakaoGift}
-            onChange={(e) => updateLink("kakaoGift", e.target.value)}
-          />
-        )}
-        {field(
-          "브랜드 자사몰 링크",
-          <input
-            style={inputStyle}
-            value={product.links.brandSite}
-            onChange={(e) => updateLink("brandSite", e.target.value)}
-          />
-        )}
+        {(["coupang", "29cm", "kakaoGift", "brandSite"] as const).map((key) => {
+          const labels: Record<string, string> = {
+            coupang: "쿠팡 링크",
+            "29cm": "29CM 링크",
+            kakaoGift: "카카오 선물하기 링크",
+            brandSite: "브랜드 자사몰 링크",
+          };
+          const value = product.links[key];
+          return field(
+            labels[key],
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                style={{ ...inputStyle, flex: 1 }}
+                value={value}
+                onChange={(e) => updateLink(key, e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => copyToClipboard(value, key)}
+                disabled={!value}
+                style={{
+                  flexShrink: 0, padding: "0 12px", borderRadius: 8,
+                  border: "1px solid #e5e8eb", background: copied === key ? "#e8f3ff" : "#f8f9fa",
+                  color: copied === key ? "#3182f6" : "#4e5968",
+                  fontSize: 13, cursor: value ? "pointer" : "default",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {copied === key ? "복사됨" : "복사"}
+              </button>
+            </div>
+          );
+        })}
 
         {errorMsg && (
           <p style={{ color: "#f04452", fontSize: 13, marginBottom: 12 }}>{errorMsg}</p>
