@@ -15,6 +15,7 @@ export interface Product {
   tags: string[];
   category: string;
   occasion: string[];
+  collections: string[];
   isPremium: boolean;
   senseTag: string;
   images: string[];
@@ -48,6 +49,10 @@ export function filterProducts(
 
     return matchReceiver && matchPrice && matchTaste;
   });
+}
+
+export function filterByCollection(products: Product[], collection: string): Product[] {
+  return products.filter((p) => p.collections.includes(collection));
 }
 
 export function splitResults(products: Product[]) {

@@ -15,6 +15,7 @@ const EMPTY: Product = {
   tags: [],
   category: "",
   occasion: [],
+  collections: [],
   isPremium: false,
   senseTag: "",
   images: [],

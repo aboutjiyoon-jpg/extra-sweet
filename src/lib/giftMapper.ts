@@ -10,6 +10,7 @@ export interface GiftRow {
   tags: string[];
   category: string;
   occasion: string[];
+  collections: string[];
   is_premium: boolean;
   sense_tag: string | null;
   images: string[];
@@ -35,6 +36,7 @@ export function rowToProduct(row: GiftRow): Product {
     tags: row.tags ?? [],
     category: row.category,
     occasion: row.occasion ?? [],
+    collections: row.collections ?? [],
     isPremium: row.is_premium,
     senseTag: row.sense_tag ?? "",
     images: row.images ?? [],
