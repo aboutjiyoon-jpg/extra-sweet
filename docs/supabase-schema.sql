@@ -17,13 +17,11 @@ create table if not exists public.gifts (
   category      text not null,
   occasion      text[] not null default '{}',
   is_premium    boolean not null default false,
-  sense_tag     text,
   images        text[] not null default '{}',
   headline      text not null,
   review        text not null,
   brand_story   text,
   reason        text,
-  sense_point   text,
   upgrade_of    text,
   related_to    text,
   links         jsonb not null default '{}'::jsonb,
@@ -117,8 +115,8 @@ begin
 
   insert into public.gifts as g (
     id, name, brand, price, price_group, receiver, tags, category, occasion,
-    is_premium, sense_tag, images, headline, review, brand_story, reason,
-    sense_point, upgrade_of, related_to, links
+    is_premium, images, headline, review, brand_story, reason,
+    upgrade_of, related_to, links
   )
   values (
     p_gift->>'id',
@@ -131,13 +129,11 @@ begin
     p_gift->>'category',
     coalesce((select array_agg(value) from jsonb_array_elements_text(p_gift->'occasion')), '{}'),
     coalesce((p_gift->>'isPremium')::boolean, false),
-    p_gift->>'senseTag',
     coalesce((select array_agg(value) from jsonb_array_elements_text(p_gift->'images')), '{}'),
     p_gift->>'headline',
     p_gift->>'review',
     p_gift->>'brandStory',
     p_gift->>'reason',
-    p_gift->>'sensePoint',
     p_gift->>'upgradeOf',
     p_gift->>'relatedTo',
     coalesce(p_gift->'links', '{}'::jsonb)
@@ -152,13 +148,11 @@ begin
     category = excluded.category,
     occasion = excluded.occasion,
     is_premium = excluded.is_premium,
-    sense_tag = excluded.sense_tag,
     images = excluded.images,
     headline = excluded.headline,
     review = excluded.review,
     brand_story = excluded.brand_story,
     reason = excluded.reason,
-    sense_point = excluded.sense_point,
     upgrade_of = excluded.upgrade_of,
     related_to = excluded.related_to,
     links = excluded.links

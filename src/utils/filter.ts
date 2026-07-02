@@ -18,13 +18,11 @@ export interface Product {
   occasion: string[];
   collections: string[];
   isPremium: boolean;
-  senseTag: string;
   images: string[];
   headline: string;
   review: string;
   brandStory: string | null;
   reason: string;
-  sensePoint: string;
   upgradeOf: string | null;
   relatedTo?: string | null;
   links: ProductLinks;
@@ -63,7 +61,6 @@ export function scoreProduct(product: Product): number {
   if (linkCount > 0) score += 30;
   if (linkCount >= 2) score += 10;
   if (product.brandStory) score += 10;
-  if (product.sensePoint) score += 5;
   score += Math.max(0, 20 - product.collections.length * 2);
   return score;
 }
@@ -96,13 +93,6 @@ export function splitResults(products: Product[]) {
 export function formatPrice(price: number): string {
   return price.toLocaleString("ko-KR") + "원";
 }
-
-export const SENSE_TAG_EMOJI: Record<string, string> = {
-  "센스 있음": "✨",
-  "요즘 인기": "🔥",
-  "만족도 높음": "💝",
-  "실용적": "🎁",
-};
 
 // --- 구매 링크 라우팅 ---
 
