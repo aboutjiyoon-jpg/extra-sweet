@@ -1,6 +1,7 @@
 import type { Product } from "../utils/filter";
 
 export interface GiftRow {
+  seq: number;
   id: string;
   name: string;
   brand: string;
@@ -27,6 +28,7 @@ export interface GiftRow {
 
 export function rowToProduct(row: GiftRow): Product {
   return {
+    seq: row.seq,
     id: row.id,
     name: row.name,
     brand: row.brand,
@@ -79,5 +81,6 @@ export function productToGiftPayload(product: Product) {
     upgradeOf: product.upgradeOf,
     relatedTo: product.relatedTo,
     links: product.links,
+    collections: product.collections,
   };
 }

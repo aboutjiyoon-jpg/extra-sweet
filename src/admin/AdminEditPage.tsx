@@ -6,6 +6,7 @@ import type { Product, ProductLinks } from "../utils/filter";
 import { useAdminAuth } from "./AdminAuthContext";
 
 const EMPTY: Product = {
+  seq: undefined,
   id: "",
   name: "",
   brand: "",
@@ -30,13 +31,12 @@ const EMPTY: Product = {
 };
 
 const PRICE_GROUPS = ["1만원 이하", "3만원 이하", "5만원 이하", "10만원 이하", "20만원 이상"];
-const RECEIVER_OPTIONS = ["연인", "친구", "부모님", "직장동료", "형제자매", "아이"];
-const TASTE_OPTIONS = ["커피", "향", "인테리어", "운동", "캠핑", "독서", "술", "귀여운 것", "실용적인 것"];
-const OCCASION_OPTIONS = ["생일", "집들이", "결혼", "졸업", "취직", "명절", "기념일"];
-const COLLECTION_OPTIONS = [
-  "친구생일", "집들이", "직장동료", "부모님", "남사친", "여자친구",
-  "결혼친구", "입학졸업", "남자친구", "아기", "커피", "요리", "향", "술", "귀여움", "인테리어",
+
+const COLLECTION_SITUATION = [
+  "친구생일", "집들이", "직장동료", "부모님",
+  "남사친", "여자친구", "결혼친구", "입학졸업", "남자친구", "아기",
 ];
+const COLLECTION_TASTE = ["커피", "요리", "향", "술", "귀여움", "인테리어"];
 
 function field(label: string, children: ReactNode) {
   return (
@@ -97,9 +97,12 @@ function ChipToggle({
   );
 }
 
+function isOnelink(url: string) { return url.includes("onelink.me"); }
+function isAffiliate(url: string) { return url.startsWith("https://link.coupang.com/a/"); }
+
 export default function AdminEditPage() {
-  const { id } = useParams();
-  const isNew = !id;
+  const { seq } = useParams<{ seq: string }>();
+  const isNew = !seq;
   const navigate = useNavigate();
   const { password } = useAdminAuth();
 
@@ -123,13 +126,17 @@ export default function AdminEditPage() {
     if (isNew) return;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("gifts").select("*").eq("id", id).single();
+      const { data, error } = await supabase
+        .from("gifts")
+        .select("*")
+        .eq("seq", Number(seq))
+        .single();
       if (!error && data) {
         setProduct(rowToProduct(data as GiftRow));
       }
       setLoading(false);
     })();
-  }, [id, isNew]);
+  }, [seq, isNew]);
 
   const update = <K extends keyof Product>(key: K, value: Product[K]) =>
     setProduct((p) => ({ ...p, [key]: value }));
@@ -150,19 +157,13 @@ export default function AdminEditPage() {
       upsert: false,
     });
     setUploading(false);
-    if (error) {
-      alert("이미지 업로드 실패: " + error.message);
-      return;
-    }
+    if (error) { alert("이미지 업로드 실패: " + error.message); return; }
     const { data } = supabase.storage.from("gift-images").getPublicUrl(path);
     update("images", [...product.images, data.publicUrl]);
   };
 
   const removeImage = (idx: number) =>
-    update(
-      "images",
-      product.images.filter((_, i) => i !== idx)
-    );
+    update("images", product.images.filter((_, i) => i !== idx));
 
   const handleSave = async () => {
     if (!password) return;
@@ -177,10 +178,7 @@ export default function AdminEditPage() {
       p_gift: productToGiftPayload(product),
     });
     setSaving(false);
-    if (error) {
-      setErrorMsg("저장 실패: " + error.message);
-      return;
-    }
+    if (error) { setErrorMsg("저장 실패: " + error.message); return; }
     navigate("/admin");
   };
 
@@ -188,13 +186,11 @@ export default function AdminEditPage() {
     return <div style={{ padding: 24 }}>불러오는 중...</div>;
   }
 
+  const cm29 = product.links["29cm"];
+  const coupang = product.links.coupang;
+
   return (
-    <div
-      style={{
-        padding: "20px 16px 100px",
-        fontFamily: "-apple-system, sans-serif",
-      }}
-    >
+    <div style={{ padding: "20px 16px 100px", fontFamily: "-apple-system, sans-serif", maxWidth: 600, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <button
           onClick={() => navigate("/admin")}
@@ -203,13 +199,13 @@ export default function AdminEditPage() {
           ←
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 700 }}>
-          {isNew ? "새 상품" : "상품 수정"}
+          {isNew ? "새 상품" : `수정 #${product.seq}`}
         </h1>
       </div>
 
       <div style={{ background: "#fff", borderRadius: 16, padding: 20 }}>
         {field(
-          "ID (고유, 영문-숫자-하이픈)",
+          "ID (영문-숫자-하이픈, 고유)",
           <input
             style={inputStyle}
             value={product.id}
@@ -218,137 +214,49 @@ export default function AdminEditPage() {
             placeholder="kotona-towel"
           />
         )}
-        {field(
-          "상품명",
-          <input
-            style={inputStyle}
-            value={product.name}
-            onChange={(e) => update("name", e.target.value)}
-          />
-        )}
-        {field(
-          "브랜드",
-          <input
-            style={inputStyle}
-            value={product.brand}
-            onChange={(e) => update("brand", e.target.value)}
-          />
-        )}
-        {field(
-          "가격",
-          <input
-            type="number"
-            style={inputStyle}
-            value={product.price}
-            onChange={(e) => update("price", Number(e.target.value))}
-          />
-        )}
+        {field("상품명", <input style={inputStyle} value={product.name} onChange={(e) => update("name", e.target.value)} />)}
+        {field("브랜드", <input style={inputStyle} value={product.brand} onChange={(e) => update("brand", e.target.value)} />)}
+        {field("가격", <input type="number" style={inputStyle} value={product.price} onChange={(e) => update("price", Number(e.target.value))} />)}
         {field(
           "가격대",
-          <select
-            style={inputStyle}
-            value={product.priceGroup}
-            onChange={(e) => update("priceGroup", e.target.value)}
-          >
-            {PRICE_GROUPS.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
+          <select style={inputStyle} value={product.priceGroup} onChange={(e) => update("priceGroup", e.target.value)}>
+            {PRICE_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         )}
-        {field(
-          "카테고리",
-          <input
-            style={inputStyle}
-            value={product.category}
-            onChange={(e) => update("category", e.target.value)}
-          />
-        )}
-        {field(
-          "받는 사람",
+        {field("카테고리 (내부용)", <input style={inputStyle} value={product.category} onChange={(e) => update("category", e.target.value)} placeholder="조명 / 주방 / 패션 등" />)}
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#4e5968", marginBottom: 8 }}>
+            컬렉션 — 받는 사람 / 상황
+          </div>
           <ChipToggle
-            options={RECEIVER_OPTIONS}
-            selected={product.receiver}
-            onChange={(v) => update("receiver", v)}
-          />
-        )}
-        {field(
-          "취향 태그",
-          <ChipToggle
-            options={TASTE_OPTIONS}
-            selected={product.tags}
-            onChange={(v) => update("tags", v)}
-          />
-        )}
-        {field(
-          "행사/상황 (occasion)",
-          <ChipToggle
-            options={OCCASION_OPTIONS}
-            selected={product.occasion}
-            onChange={(v) => update("occasion", v)}
-          />
-        )}
-        {field(
-          "컬렉션 (collections)",
-          <ChipToggle
-            options={COLLECTION_OPTIONS}
+            options={COLLECTION_SITUATION}
             selected={product.collections}
             onChange={(v) => update("collections", v)}
           />
-        )}
-        {field(
-          "센스 태그",
-          <input
-            style={inputStyle}
-            value={product.senseTag}
-            onChange={(e) => update("senseTag", e.target.value)}
-            placeholder="실용적 / 센스 있음 / 요즘 인기 / 만족도 높음"
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#4e5968", marginBottom: 8 }}>
+            컬렉션 — 상품 카테고리
+          </div>
+          <ChipToggle
+            options={COLLECTION_TASTE}
+            selected={product.collections}
+            onChange={(v) => update("collections", v)}
           />
-        )}
+        </div>
+
         {field(
           "프리미엄 상품",
           <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="checkbox"
-              checked={product.isPremium}
-              onChange={(e) => update("isPremium", e.target.checked)}
-            />
+            <input type="checkbox" checked={product.isPremium} onChange={(e) => update("isPremium", e.target.checked)} />
             <span style={{ fontSize: 14 }}>광고 시청 후 공개되는 상품</span>
           </label>
         )}
-        {field(
-          "헤드라인",
-          <input
-            style={inputStyle}
-            value={product.headline}
-            onChange={(e) => update("headline", e.target.value)}
-          />
-        )}
-        {field(
-          "리뷰",
-          <textarea
-            style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
-            value={product.review}
-            onChange={(e) => update("review", e.target.value)}
-          />
-        )}
-        {field(
-          "브랜드 스토리",
-          <textarea
-            style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
-            value={product.brandStory ?? ""}
-            onChange={(e) => update("brandStory", e.target.value)}
-          />
-        )}
-        {field(
-          "센스 포인트",
-          <input
-            style={inputStyle}
-            value={product.sensePoint}
-            onChange={(e) => update("sensePoint", e.target.value)}
-          />
-        )}
+        {field("헤드라인", <input style={inputStyle} value={product.headline} onChange={(e) => update("headline", e.target.value)} />)}
+        {field("리뷰", <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" }} value={product.review} onChange={(e) => update("review", e.target.value)} />)}
+        {field("브랜드 스토리", <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} value={product.brandStory ?? ""} onChange={(e) => update("brandStory", e.target.value)} />)}
 
         {field(
           "이미지",
@@ -361,30 +269,16 @@ export default function AdminEditPage() {
                     alt=""
                     referrerPolicy="no-referrer"
                     onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/72x72/f2f4f6/adb5bd?text=X"; }}
-                    style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: 8,
-                      objectFit: "cover",
-                      background: "#f2f4f6",
-                    }}
+                    style={{ width: 72, height: 72, borderRadius: 8, objectFit: "cover", background: "#f2f4f6" }}
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(idx)}
                     style={{
-                      position: "absolute",
-                      top: -6,
-                      right: -6,
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      border: "none",
-                      background: "#333d4b",
-                      color: "#fff",
-                      fontSize: 12,
-                      lineHeight: "20px",
-                      cursor: "pointer",
+                      position: "absolute", top: -6, right: -6,
+                      width: 20, height: 20, borderRadius: "50%",
+                      border: "none", background: "#333d4b", color: "#fff",
+                      fontSize: 12, lineHeight: "20px", cursor: "pointer",
                     }}
                   >
                     ×
@@ -393,55 +287,20 @@ export default function AdminEditPage() {
               ))}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => cameraInputRef.current?.click()}
-                style={{
-                  flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb",
-                  background: "#f8f9fa", fontSize: 14, cursor: "pointer",
-                }}
-              >
+              <button type="button" disabled={uploading} onClick={() => cameraInputRef.current?.click()}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb", background: "#f8f9fa", fontSize: 14, cursor: "pointer" }}>
                 📷 카메라
               </button>
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => galleryInputRef.current?.click()}
-                style={{
-                  flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb",
-                  background: "#f8f9fa", fontSize: 14, cursor: "pointer",
-                }}
-              >
+              <button type="button" disabled={uploading} onClick={() => galleryInputRef.current?.click()}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb", background: "#f8f9fa", fontSize: 14, cursor: "pointer" }}>
                 🖼️ 앨범
               </button>
             </div>
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageUpload(file);
-                e.target.value = "";
-              }}
-            />
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageUpload(file);
-                e.target.value = "";
-              }}
-            />
-            {uploading && (
-              <p style={{ fontSize: 13, color: "#8b95a1", marginTop: 6 }}>업로드 중...</p>
-            )}
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
+            <input ref={galleryInputRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
+            {uploading && <p style={{ fontSize: 13, color: "#8b95a1", marginTop: 6 }}>업로드 중...</p>}
           </div>
         )}
 
@@ -453,50 +312,59 @@ export default function AdminEditPage() {
             brandSite: "브랜드 자사몰 링크",
           };
           const value = product.links[key];
-          return field(
-            labels[key],
-            <div style={{ display: "flex", gap: 6 }}>
-              <input
-                style={{ ...inputStyle, flex: 1 }}
-                value={value}
-                onChange={(e) => updateLink(key, e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => copyToClipboard(value, key)}
-                disabled={!value}
-                style={{
-                  flexShrink: 0, padding: "0 12px", borderRadius: 8,
-                  border: "1px solid #e5e8eb", background: copied === key ? "#e8f3ff" : "#f8f9fa",
-                  color: copied === key ? "#3182f6" : "#4e5968",
-                  fontSize: 13, cursor: value ? "pointer" : "default",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {copied === key ? "복사됨" : "복사"}
-              </button>
+          const badge = key === "29cm" && cm29
+            ? <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 700,
+                background: isOnelink(cm29) ? "#e8f7ee" : "#fff0e6",
+                color: isOnelink(cm29) ? "#1a7a3f" : "#c05000" }}>
+                {isOnelink(cm29) ? "원링크 ✓" : "일반링크"}
+              </span>
+            : key === "coupang" && coupang
+            ? <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, fontWeight: 700,
+                background: isAffiliate(coupang) ? "#e8f7ee" : "#fdedee",
+                color: isAffiliate(coupang) ? "#1a7a3f" : "#f04452" }}>
+                {isAffiliate(coupang) ? "제휴 ✓" : "비제휴"}
+              </span>
+            : null;
+
+          return (
+            <div key={key} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#4e5968", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                {labels[key]} {badge}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  value={value}
+                  onChange={(e) => updateLink(key, e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(value, key)}
+                  disabled={!value}
+                  style={{
+                    flexShrink: 0, padding: "0 12px", borderRadius: 8,
+                    border: "1px solid #e5e8eb",
+                    background: copied === key ? "#e8f3ff" : "#f8f9fa",
+                    color: copied === key ? "#3182f6" : "#4e5968",
+                    fontSize: 13, cursor: value ? "pointer" : "default", whiteSpace: "nowrap",
+                  }}
+                >
+                  {copied === key ? "복사됨" : "복사"}
+                </button>
+              </div>
             </div>
           );
         })}
 
-        {errorMsg && (
-          <p style={{ color: "#f04452", fontSize: 13, marginBottom: 12 }}>{errorMsg}</p>
-        )}
+        {errorMsg && <p style={{ color: "#f04452", fontSize: 13, marginBottom: 12 }}>{errorMsg}</p>}
 
         <button
           onClick={handleSave}
           disabled={saving}
           style={{
-            width: "100%",
-            padding: "14px 0",
-            borderRadius: 10,
-            border: "none",
-            background: "#3182f6",
-            color: "#fff",
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: "pointer",
-            opacity: saving ? 0.6 : 1,
+            width: "100%", padding: "14px 0", borderRadius: 10, border: "none",
+            background: "#3182f6", color: "#fff", fontSize: 16, fontWeight: 700,
+            cursor: "pointer", opacity: saving ? 0.6 : 1,
           }}
         >
           {saving ? "저장 중..." : "저장"}

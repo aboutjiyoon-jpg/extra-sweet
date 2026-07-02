@@ -6,6 +6,7 @@ export interface ProductLinks {
 }
 
 export interface Product {
+  seq?: number;
   id: string;
   name: string;
   brand: string;

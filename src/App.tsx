@@ -25,7 +25,7 @@ export default function App() {
           <Route index element={<AdminListPage />} />
           <Route path="new" element={<AdminEditPage />} />
           <Route path="collections" element={<AdminCollectionsPage />} />
-          <Route path=":id" element={<AdminEditPage />} />
+          <Route path=":seq" element={<AdminEditPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
