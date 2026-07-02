@@ -17,13 +17,11 @@ const EMPTY: Product = {
   occasion: [],
   collections: [],
   isPremium: false,
-  senseTag: "",
   images: [],
   headline: "",
   review: "",
   brandStory: "",
   reason: "",
-  sensePoint: "",
   upgradeOf: null,
   relatedTo: null,
   links: { coupang: "", "29cm": "", kakaoGift: "", brandSite: "" },
@@ -277,15 +275,6 @@ export default function AdminEditPage() {
           />
         )}
         {field(
-          "센스 태그",
-          <input
-            style={inputStyle}
-            value={product.senseTag}
-            onChange={(e) => update("senseTag", e.target.value)}
-            placeholder="실용적 / 센스 있음 / 요즘 인기 / 만족도 높음"
-          />
-        )}
-        {field(
           "프리미엄 상품",
           <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
@@ -320,15 +309,6 @@ export default function AdminEditPage() {
             onChange={(e) => update("brandStory", e.target.value)}
           />
         )}
-        {field(
-          "센스 포인트",
-          <input
-            style={inputStyle}
-            value={product.sensePoint}
-            onChange={(e) => update("sensePoint", e.target.value)}
-          />
-        )}
-
         {field(
           "이미지",
           <div>

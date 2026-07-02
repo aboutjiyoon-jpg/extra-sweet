@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { formatPrice, resolveLinks, openPurchaseLink, SENSE_TAG_EMOJI, type Product } from "../utils/filter";
+import { formatPrice, resolveLinks, openPurchaseLink, type Product } from "../utils/filter";
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   가전: "🔌", 건강: "💊", 경험: "🎫", 리빙: "🏠", 문구: "✏️",
@@ -33,7 +33,6 @@ export default function ProductModal({ product, onClose }: Props) {
   const { primary, secondary } = resolveLinks(product);
   const fallbackEmoji = CATEGORY_EMOJIS[product.category] ?? "🎁";
   const hasImage = product.images.length > 0;
-  const senseEmoji = SENSE_TAG_EMOJI[product.senseTag] ?? "✨";
 
   return (
     <div
@@ -87,9 +86,6 @@ export default function ProductModal({ product, onClose }: Props) {
 
           {/* 태그 */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-            <span style={{ padding: "4px 10px", borderRadius: 12, background: "#e8f3ff", color: "#3182f6", fontSize: 12, fontWeight: 600 }}>
-              {senseEmoji} {product.senseTag}
-            </span>
             {product.tags.map((t) => (
               <span key={t} style={{ padding: "4px 10px", borderRadius: 12, background: "#f2f4f6", color: "#4e5968", fontSize: 12 }}>
                 {t}
@@ -112,14 +108,6 @@ export default function ProductModal({ product, onClose }: Props) {
             <p style={{ fontSize: 13, color: "#8b95a1", lineHeight: 1.7, background: "#f8f9fa", borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
               {product.brandStory}
             </p>
-          )}
-
-          {/* 센스 포인트 */}
-          {product.sensePoint && (
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 20, background: "#fffbe6", borderRadius: 10, padding: "10px 14px" }}>
-              <span>💡</span>
-              <span style={{ fontSize: 13, color: "#4e5968", lineHeight: 1.6 }}>{product.sensePoint}</span>
-            </div>
           )}
 
           {/* Primary CTA */}
