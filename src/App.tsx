@@ -4,6 +4,7 @@ import { AdminAuthProvider } from "./admin/AdminAuthContext";
 import AdminGuard from "./admin/AdminGuard";
 import AdminListPage from "./admin/AdminListPage";
 import AdminEditPage from "./admin/AdminEditPage";
+import AdminCollectionsPage from "./admin/AdminCollectionsPage";
 
 function AdminLayout() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminListPage />} />
           <Route path="new" element={<AdminEditPage />} />
+          <Route path="collections" element={<AdminCollectionsPage />} />
           <Route path=":id" element={<AdminEditPage />} />
         </Route>
       </Routes>

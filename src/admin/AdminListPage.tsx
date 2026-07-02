@@ -86,6 +86,19 @@ export default function AdminListPage() {
         </button>
       </div>
 
+      <div style={{ marginBottom: 12 }}>
+        <button
+          onClick={() => navigate("/admin/collections")}
+          style={{
+            width: "100%", padding: "10px 0", borderRadius: 10,
+            border: "1px dashed #3182f6", background: "#e8f3ff",
+            color: "#3182f6", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          컬렉션 관리 (홈 화면 카테고리)
+        </button>
+      </div>
+
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <input
           placeholder="검색 (ID, 상품명, 브랜드)"
