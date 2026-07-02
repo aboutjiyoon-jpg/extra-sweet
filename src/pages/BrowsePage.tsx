@@ -12,6 +12,25 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   패브릭: "🧶", 패션: "👗", 패션잡화: "👜", 푸드: "🍫",
 };
 
+const COLLECTIONS = [
+  { key: "친구생일", label: "친구 생일" },
+  { key: "집들이", label: "집들이" },
+  { key: "직장동료", label: "직장 동료에게" },
+  { key: "부모님", label: "부모님께" },
+  { key: "남사친", label: "남사친에게" },
+  { key: "여자친구", label: "여자친구에게" },
+  { key: "결혼", label: "결혼하는 친구에게" },
+  { key: "졸업입학", label: "졸업과 입학" },
+  { key: "남자친구", label: "남자친구에게" },
+  { key: "아기", label: "아기를 위한" },
+  { key: "커피", label: "커피" },
+  { key: "요리", label: "요리" },
+  { key: "향", label: "향" },
+  { key: "술", label: "술" },
+  { key: "귀여움", label: "귀여움" },
+  { key: "인테리어", label: "인테리어" },
+];
+
 function formatDate(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -117,23 +136,18 @@ function MasonryCard({ product, onClick }: { product: Product; onClick: () => vo
 export default function BrowsePage() {
   const { products, loading } = useGifts();
   const isMobile = useIsMobile();
-  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [premiumUnlocked, setPremiumUnlocked] = useState(false);
-
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(products.filter(p => !p.isPremium).map(p => p.category))).sort();
-    return ["전체", ...cats];
-  }, [products]);
 
   const { freeProducts, premiumProducts } = useMemo(() => {
     const free = products.filter(p => !p.isPremium);
     const premium = products.filter(p => p.isPremium);
-    const filtered = selectedCategory === "전체"
+    const filtered = selectedCollection === null
       ? free
-      : free.filter(p => p.category === selectedCategory);
+      : free.filter(p => p.collections.includes(selectedCollection));
     return { freeProducts: filtered, premiumProducts: premium };
-  }, [products, selectedCategory]);
+  }, [products, selectedCollection]);
 
   const handleWatchAd = () => {
     // TODO: Google AdSense 리워드 광고 연동
@@ -168,16 +182,22 @@ export default function BrowsePage() {
               ? Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} style={{ height: 30, width: 52, borderRadius: 14, background: "#f2f4f6", flexShrink: 0 }} />
                 ))
-              : categories.map((cat) => (
-                  <button key={cat} onClick={() => setSelectedCategory(cat)} style={{
+              : [
+                  <button key="전체" onClick={() => setSelectedCollection(null)} style={{
                     flexShrink: 0, padding: "5px 12px", borderRadius: 14, border: "none",
-                    fontSize: 12, fontWeight: selectedCategory === cat ? 700 : 400, cursor: "pointer",
-                    background: selectedCategory === cat ? "#191f28" : "#f2f4f6",
-                    color: selectedCategory === cat ? "#fff" : "#4e5968",
-                  }}>
-                    {cat === "전체" ? "전체" : `${CATEGORY_EMOJIS[cat] ?? ""} ${cat}`}
-                  </button>
-                ))}
+                    fontSize: 12, fontWeight: selectedCollection === null ? 700 : 400, cursor: "pointer",
+                    background: selectedCollection === null ? "#191f28" : "#f2f4f6",
+                    color: selectedCollection === null ? "#fff" : "#4e5968",
+                  }}>전체</button>,
+                  ...COLLECTIONS.map((c) => (
+                    <button key={c.key} onClick={() => setSelectedCollection(c.key)} style={{
+                      flexShrink: 0, padding: "5px 12px", borderRadius: 14, border: "none",
+                      fontSize: 12, fontWeight: selectedCollection === c.key ? 700 : 400, cursor: "pointer",
+                      background: selectedCollection === c.key ? "#191f28" : "#f2f4f6",
+                      color: selectedCollection === c.key ? "#fff" : "#4e5968",
+                    }}>{c.label}</button>
+                  ))
+                ]}
           </div>
         </div>
       </div>
