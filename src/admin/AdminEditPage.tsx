@@ -335,6 +335,19 @@ export default function AdminEditPage() {
                   value={value}
                   onChange={(e) => updateLink(key, e.target.value)}
                 />
+                {value && (
+                  <button
+                    type="button"
+                    onClick={() => updateLink(key, "")}
+                    style={{
+                      flexShrink: 0, padding: "0 10px", borderRadius: 8,
+                      border: "1px solid #e5e8eb", background: "#fdedee",
+                      color: "#f04452", fontSize: 16, cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => copyToClipboard(value, key)}

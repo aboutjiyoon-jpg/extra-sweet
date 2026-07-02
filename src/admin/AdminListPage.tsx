@@ -151,15 +151,25 @@ export default function AdminListPage() {
   useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => {
-    if (!search) return products;
-    const q = search.toLowerCase();
-    return products.filter(
-      (p) =>
-        p.id.toLowerCase().includes(q) ||
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        String(p.seq).includes(q)
-    );
+    const base = search
+      ? products.filter((p) => {
+          const q = search.toLowerCase();
+          return (
+            p.id.toLowerCase().includes(q) ||
+            p.name.toLowerCase().includes(q) ||
+            p.brand.toLowerCase().includes(q) ||
+            String(p.seq).includes(q)
+          );
+        })
+      : products;
+
+    const needsAttention = (p: Product) => {
+      const noImage = p.images.length === 0;
+      const bad29cm = !p.links["29cm"] || p.links["29cm"].includes("onelink.me");
+      return (noImage ? 2 : 0) + (bad29cm ? 1 : 0);
+    };
+
+    return [...base].sort((a, b) => needsAttention(b) - needsAttention(a));
   }, [products, search]);
 
   const handleDelete = async (id: string) => {
@@ -176,16 +186,17 @@ export default function AdminListPage() {
   };
 
   return (
-    <div style={{ fontFamily: "-apple-system, sans-serif", minHeight: "100vh", background: "#f8f9fa" }}>
+    <div style={{ fontFamily: "-apple-system, sans-serif", minHeight: "100vh", background: "#f8f9fa", maxWidth: "100vw", overflowX: "hidden" }}>
       {/* Top Navbar */}
       <div style={{
         position: "sticky", top: 0, zIndex: 50,
         background: "#fff", borderBottom: "1px solid #e5e8eb",
-        padding: "0 20px",
+        padding: "0 12px",
       }}>
         <div style={{
           maxWidth: 1400, margin: "0 auto",
-          display: "flex", alignItems: "center", gap: 12, height: 56,
+          display: "flex", alignItems: "center", gap: 8, height: 56,
+          overflowX: "auto", WebkitOverflowScrolling: "touch" as any,
         }}>
           <h1 style={{ fontSize: 17, fontWeight: 700, whiteSpace: "nowrap", margin: 0 }}>
             선물 관리
