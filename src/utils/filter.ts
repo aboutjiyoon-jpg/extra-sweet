@@ -55,9 +55,40 @@ export function filterByCollection(products: Product[], collection: string): Pro
   return products.filter((p) => p.collections.includes(collection));
 }
 
+export function scoreProduct(product: Product): number {
+  let score = 0;
+  if (product.images.length > 0) score += 40;
+  const linkCount = Object.values(product.links).filter(Boolean).length;
+  if (linkCount > 0) score += 30;
+  if (linkCount >= 2) score += 10;
+  if (product.brandStory) score += 10;
+  if (product.sensePoint) score += 5;
+  score += Math.max(0, 20 - product.collections.length * 2);
+  return score;
+}
+
+function selectDiverse(products: Product[], n: number): Product[] {
+  const sorted = [...products].sort((a, b) => scoreProduct(b) - scoreProduct(a));
+  const selected: Product[] = [];
+  const usedCategories = new Set<string>();
+
+  for (const p of sorted) {
+    if (selected.length >= n) break;
+    if (!usedCategories.has(p.category)) {
+      selected.push(p);
+      usedCategories.add(p.category);
+    }
+  }
+  for (const p of sorted) {
+    if (selected.length >= n) break;
+    if (!selected.includes(p)) selected.push(p);
+  }
+  return selected;
+}
+
 export function splitResults(products: Product[]) {
-  const popular = products.filter((p) => !p.isPremium).slice(0, 3);
-  const premium = products.filter((p) => p.isPremium).slice(0, 3);
+  const popular = selectDiverse(products.filter((p) => !p.isPremium), 3);
+  const premium = selectDiverse(products.filter((p) => p.isPremium), 3);
   return { popular, premium };
 }
 
