@@ -214,7 +214,7 @@ export default function AdminEditPage() {
         )}
         {field("상품명", <input style={inputStyle} value={product.name} onChange={(e) => update("name", e.target.value)} />)}
         {field("브랜드", <input style={inputStyle} value={product.brand} onChange={(e) => update("brand", e.target.value)} />)}
-        {field("가격", <input type="number" style={inputStyle} value={product.price} onChange={(e) => update("price", Number(e.target.value))} />)}
+        {field("가격", <input type="number" style={inputStyle} value={product.price || ""} onFocus={(e) => e.target.select()} onChange={(e) => update("price", Number(e.target.value) || 0)} />)}
         {field(
           "가격대",
           <select style={inputStyle} value={product.priceGroup} onChange={(e) => update("priceGroup", e.target.value)}>
