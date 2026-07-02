@@ -143,6 +143,7 @@ export default function AdminListPage() {
                 src={p.images[0] || "https://placehold.co/64x64/f2f4f6/adb5bd?text=No+img"}
                 alt={p.name}
                 referrerPolicy="no-referrer"
+                onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/64x64/f2f4f6/adb5bd?text=No+img"; }}
                 style={{
                   width: 56,
                   height: 56,

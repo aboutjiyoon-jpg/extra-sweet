@@ -339,6 +339,7 @@ export default function AdminEditPage() {
                     src={url}
                     alt=""
                     referrerPolicy="no-referrer"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/72x72/f2f4f6/adb5bd?text=X"; }}
                     style={{
                       width: 72,
                       height: 72,
