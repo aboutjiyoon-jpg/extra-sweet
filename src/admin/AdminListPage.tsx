@@ -164,14 +164,17 @@ export default function AdminListPage() {
       : products;
 
     const needsAttention = (p: Product) => (p.images.length === 0 ? 1 : 0);
-    const isOnelink29cm = (p: Product) =>
-      !!p.links["29cm"] && p.links["29cm"].includes("onelink.me");
+    // 0: 29cm 일반 링크(최우선) · 1: 그 외(쿠팡/자사몰만 있거나 링크 없음) · 2: 29cm 원링크(최하위)
+    const linkPriority = (p: Product) => {
+      const cm29 = p.links["29cm"];
+      if (!cm29) return 1;
+      return cm29.includes("onelink.me") ? 2 : 0;
+    };
 
     return [...base].sort((a, b) => {
       const attentionDiff = needsAttention(b) - needsAttention(a);
       if (attentionDiff !== 0) return attentionDiff;
-      // 원링크(29cm onelink.me)는 뒤로 밀어서, 일반 상품을 먼저 볼 수 있게 한다
-      return Number(isOnelink29cm(a)) - Number(isOnelink29cm(b));
+      return linkPriority(a) - linkPriority(b);
     });
   }, [products, search]);
 
