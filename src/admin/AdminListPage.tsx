@@ -163,13 +163,16 @@ export default function AdminListPage() {
         })
       : products;
 
-    const needsAttention = (p: Product) => {
-      const noImage = p.images.length === 0;
-      const bad29cm = !p.links["29cm"] || p.links["29cm"].includes("onelink.me");
-      return (noImage ? 2 : 0) + (bad29cm ? 1 : 0);
-    };
+    const needsAttention = (p: Product) => (p.images.length === 0 ? 1 : 0);
+    const isOnelink29cm = (p: Product) =>
+      !!p.links["29cm"] && p.links["29cm"].includes("onelink.me");
 
-    return [...base].sort((a, b) => needsAttention(b) - needsAttention(a));
+    return [...base].sort((a, b) => {
+      const attentionDiff = needsAttention(b) - needsAttention(a);
+      if (attentionDiff !== 0) return attentionDiff;
+      // 원링크(29cm onelink.me)는 뒤로 밀어서, 일반 상품을 먼저 볼 수 있게 한다
+      return Number(isOnelink29cm(a)) - Number(isOnelink29cm(b));
+    });
   }, [products, search]);
 
   const handleDelete = async (id: string) => {

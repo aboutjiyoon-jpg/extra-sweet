@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useState, useRef, type ReactNode, type CSSProperties, type MouseEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { rowToProduct, productToGiftPayload, type GiftRow } from "../lib/giftMapper";
@@ -112,6 +112,17 @@ export default function AdminEditPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  // 이미지 삭제 직후 레이아웃이 줄어들면서, 모바일에서 지연 발생하는 클릭이
+  // 그 자리로 밀려온 다른 버튼(다음 사진의 ×, 카메라/앨범 버튼)에 잘못 꽂히는 걸 막는 락
+  const clickLockUntilRef = useRef(0);
+  const guardClick = (fn: () => void) => (e: MouseEvent) => {
+    if (Date.now() < clickLockUntilRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    fn();
+  };
 
   const copyToClipboard = async (value: string, key: string) => {
     if (!value) return;
@@ -160,8 +171,10 @@ export default function AdminEditPage() {
     update("images", [...product.images, data.publicUrl]);
   };
 
-  const removeImage = (idx: number) =>
+  const removeImage = (idx: number) => {
+    clickLockUntilRef.current = Date.now() + 400;
     update("images", product.images.filter((_, i) => i !== idx));
+  };
 
   const handleSave = async () => {
     if (!password) return;
@@ -261,7 +274,7 @@ export default function AdminEditPage() {
           <div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
               {product.images.map((url, idx) => (
-                <div key={url + idx} style={{ position: "relative" }}>
+                <div key={url} style={{ position: "relative" }}>
                   <img
                     src={url}
                     alt=""
@@ -271,7 +284,7 @@ export default function AdminEditPage() {
                   />
                   <button
                     type="button"
-                    onClick={() => removeImage(idx)}
+                    onClick={guardClick(() => removeImage(idx))}
                     style={{
                       position: "absolute", top: -6, right: -6,
                       width: 20, height: 20, borderRadius: "50%",
@@ -285,11 +298,11 @@ export default function AdminEditPage() {
               ))}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" disabled={uploading} onClick={() => cameraInputRef.current?.click()}
+              <button type="button" disabled={uploading} onClick={guardClick(() => cameraInputRef.current?.click())}
                 style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb", background: "#f8f9fa", fontSize: 14, cursor: "pointer" }}>
                 📷 카메라
               </button>
-              <button type="button" disabled={uploading} onClick={() => galleryInputRef.current?.click()}
+              <button type="button" disabled={uploading} onClick={guardClick(() => galleryInputRef.current?.click())}
                 style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #e5e8eb", background: "#f8f9fa", fontSize: 14, cursor: "pointer" }}>
                 🖼️ 앨범
               </button>
