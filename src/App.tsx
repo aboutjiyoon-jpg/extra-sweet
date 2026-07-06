@@ -5,6 +5,7 @@ import AdminGuard from "./admin/AdminGuard";
 import AdminListPage from "./admin/AdminListPage";
 import AdminEditPage from "./admin/AdminEditPage";
 import AdminCollectionsPage from "./admin/AdminCollectionsPage";
+import AdminInsightsPage from "./admin/AdminInsightsPage";
 
 function AdminLayout() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route index element={<AdminListPage />} />
           <Route path="new" element={<AdminEditPage />} />
           <Route path="collections" element={<AdminCollectionsPage />} />
+          <Route path="insights" element={<AdminInsightsPage />} />
           <Route path=":seq" element={<AdminEditPage />} />
         </Route>
       </Routes>

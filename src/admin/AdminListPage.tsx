@@ -13,6 +13,63 @@ function isAffiliateCoupang(url: string): boolean {
   return url.startsWith("https://link.coupang.com/a/");
 }
 
+interface CollectionRow {
+  key: string;
+  label: string;
+  sort_order: number;
+  enabled: boolean;
+}
+
+function FilterChipRow({
+  label,
+  options,
+  selected,
+  onSelect,
+  totalCount,
+}: {
+  label: string;
+  options: { key: string; label: string; count: number }[];
+  selected: string | null;
+  onSelect: (key: string | null) => void;
+  totalCount: number;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+      <span style={{ fontSize: 12, color: "#8b95a1", marginRight: 2, whiteSpace: "nowrap" }}>{label}</span>
+      <button
+        type="button"
+        onClick={() => onSelect(null)}
+        style={{
+          padding: "5px 10px", borderRadius: 14, border: "none", fontSize: 12, cursor: "pointer",
+          background: selected === null ? "#3182f6" : "#f2f4f6",
+          color: selected === null ? "#fff" : "#4e5968",
+          whiteSpace: "nowrap",
+        }}
+      >
+        전체 ({totalCount})
+      </button>
+      {options.map((opt) => {
+        const active = selected === opt.key;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onSelect(active ? null : opt.key)}
+            style={{
+              padding: "5px 10px", borderRadius: 14, border: "none", fontSize: 12, cursor: "pointer",
+              background: active ? "#3182f6" : "#f2f4f6",
+              color: active ? "#fff" : "#4e5968",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {opt.label} ({opt.count})
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function LinkBadge({ label, ok, warn }: { label: string; ok: boolean; warn: boolean }) {
   if (!warn && !ok) return null;
   const bg = ok ? "#e8f7ee" : "#fff0e6";
@@ -134,9 +191,20 @@ export default function AdminListPage() {
   const { password } = useAdminAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
+  const [collectionRows, setCollectionRows] = useState<CollectionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [collectionFilter, setCollectionFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("collections")
+      .select("key, label, sort_order, enabled")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setCollectionRows((data ?? []) as CollectionRow[]));
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -150,18 +218,44 @@ export default function AdminListPage() {
 
   useEffect(() => { load(); }, []);
 
+  // 요즘선물 홈 화면에 실제로 노출되는 컬렉션(=collections 테이블) 기준 필터 옵션 + 개수
+  const collectionOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of products) {
+      for (const c of p.collections) counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return collectionRows
+      .filter((r) => r.enabled)
+      .map((r) => ({ key: r.key, label: r.label, count: counts.get(r.key) ?? 0 }));
+  }, [products, collectionRows]);
+
+  // 어드민 내부 상품 분류(category 필드, 예: 푸드/리빙) 기준 필터 옵션 + 개수
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of products) {
+      if (!p.category) continue;
+      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([key, count]) => ({ key, label: key, count }));
+  }, [products]);
+
   const filtered = useMemo(() => {
-    const base = search
-      ? products.filter((p) => {
-          const q = search.toLowerCase();
-          return (
-            p.id.toLowerCase().includes(q) ||
-            p.name.toLowerCase().includes(q) ||
-            p.brand.toLowerCase().includes(q) ||
-            String(p.seq).includes(q)
-          );
-        })
-      : products;
+    const base = products.filter((p) => {
+      if (collectionFilter && !p.collections.includes(collectionFilter)) return false;
+      if (categoryFilter && p.category !== categoryFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (
+          p.id.toLowerCase().includes(q) ||
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          String(p.seq).includes(q)
+        );
+      }
+      return true;
+    });
 
     const needsAttention = (p: Product) => (p.images.length === 0 ? 1 : 0);
     // 0: 29cm 일반 링크(최우선) · 1: 그 외(쿠팡/자사몰만 있거나 링크 없음) · 2: 29cm 원링크(최하위)
@@ -176,7 +270,7 @@ export default function AdminListPage() {
       if (attentionDiff !== 0) return attentionDiff;
       return linkPriority(a) - linkPriority(b);
     });
-  }, [products, search]);
+  }, [products, search, collectionFilter, categoryFilter]);
 
   const handleDelete = async (id: string) => {
     if (!password) return;
@@ -232,6 +326,17 @@ export default function AdminListPage() {
             컬렉션
           </button>
           <button
+            onClick={() => navigate("/admin/insights")}
+            style={{
+              padding: "7px 14px", borderRadius: 8,
+              border: "1px solid #3182f6", background: "#e8f3ff",
+              color: "#3182f6", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            인사이트
+          </button>
+          <button
             onClick={() => navigate("/admin/new")}
             style={{
               padding: "7px 16px", borderRadius: 8, border: "none",
@@ -253,9 +358,23 @@ export default function AdminListPage() {
 
       {/* Grid */}
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 16px 80px" }}>
-        {search && (
+        <FilterChipRow
+          label="홈 카테고리"
+          options={collectionOptions}
+          selected={collectionFilter}
+          onSelect={setCollectionFilter}
+          totalCount={products.length}
+        />
+        <FilterChipRow
+          label="상품 분류"
+          options={categoryOptions}
+          selected={categoryFilter}
+          onSelect={setCategoryFilter}
+          totalCount={products.length}
+        />
+        {(search || collectionFilter || categoryFilter) && (
           <p style={{ color: "#8b95a1", fontSize: 13, marginBottom: 12 }}>
-            {filtered.length}개 검색됨
+            {filtered.length}개 표시 중
           </p>
         )}
         {loading ? (
